@@ -1,0 +1,56 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# --- Your "fake user code with no routes yet" ---
+class User(BaseModel):
+    username: str
+    password: str
+
+fake_users_db = {}
+orders_db = {}
+
+def add_user(user: User):
+    fake_users_db[user.username] = user.password
+
+def authenticate_user(user: User):
+    if user.username in fake_users_db and fake_users_db[user.username] == user.password:
+        return True
+    else:
+        return False
+# ------------------------------------------------
+
+# New model for Order (needed for /place_order)
+class Order(BaseModel):
+    item_name: str
+    quantity: int
+
+# --- Now the 3 API Routes ---
+
+# 1. Signup Route
+@app.post("/signup")
+def signup(user: User):
+    if user.username in fake_users_db:
+        return {"message": "User already exists"}
+    
+    add_user(user)  # use your function
+    return {"message": "User created successfully"}
+
+# 2. Login Route
+@app.post("/login")
+def login(user: User):
+    if authenticate_user(user):
+        return {"message": "Login successful"}
+    else:
+        return {"message": "Invalid username or password"}
+
+# 3. Place Order Route
+@app.post("/place_order")
+def place_order(order: Order):
+    order_id = len(orders_db) + 1  # simple auto-increment
+    orders_db[order_id] = {
+        "item_name": order.item_name,
+        "quantity": order.quantity
+    }
+    return {"message": "Order placed successfully", "order_id": order_id}
